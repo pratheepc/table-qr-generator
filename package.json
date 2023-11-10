@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "express": "^4.18.2",
-    "jszip": "^3.10.1"
+    "jszip": "^3.10.1",
+    "netlify-cli": "^17.2.1"
   }
 }
