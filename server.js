@@ -4,13 +4,33 @@ const JSZip = require("jszip");
 const fs = require("fs");
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 // Increase payload size limit to handle larger JSON data
 app.use(express.json({ limit: "50mb" }));
 
+const publicDir = path.join(__dirname, "public");
+
+// Generate and save the ZIP file at startup
+const generateAndSaveZip = () => {
+  const zip = new JSZip();
+  // Add files to the zip as needed
+
+  zip
+    .generateNodeStream({ type: "nodebuffer", streamFiles: true })
+    .pipe(fs.createWriteStream(path.join(publicDir, "QR_Codes.zip")))
+    .on("finish", () => {
+      console.log("ZIP file generated and saved.");
+    })
+    .on("error", (err) => {
+      console.error("Error writing ZIP file:", err);
+    });
+};
+
+generateAndSaveZip(); // Call the function at startup
+
 // Serve static files from the 'public' directory
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(publicDir));
 
 // Serve the HTML file when accessing the root path
 app.get("/", (req, res) => {
@@ -25,12 +45,6 @@ app.post("/generateAndDownloadZip", (req, res) => {
     zip.file(`${folderPath}/${fileName}`, content, { base64: true });
   });
 
-  // Ensure the 'public' directory exists
-  const publicDir = path.join(__dirname, "public");
-  if (!fs.existsSync(publicDir)) {
-    fs.mkdirSync(publicDir);
-  }
-
   zip
     .generateNodeStream({ type: "nodebuffer", streamFiles: true })
     .pipe(fs.createWriteStream(path.join(publicDir, "QR_Codes.zip")))
@@ -43,6 +57,8 @@ app.post("/generateAndDownloadZip", (req, res) => {
     });
 });
 
+// ... (other routes if any)
+
 app.listen(port, () => {
-  console.log(`Server listening`);
+  console.log(`Server listening at http://localhost:${port}`);
 });
