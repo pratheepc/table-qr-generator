@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QR Code Generator</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 5px;
+      }
+
+      input,
+      select {
+        margin-bottom: 10px;
+      }
+
+      button {
+        padding: 10px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background-color: #45a049;
+      }
+    </style>
+  </head>
+  <body>
+    <label>
+      Environment:
+      <input type="radio" name="environment" value="prod" checked /> Prod
+      <input type="radio" name="environment" value="preprod" /> Preprod
+    </label>
+
+    <label>
+      Location ID:
+      <input type="text" id="locationId" required />
+    </label>
+
+    <label>
+      Outlet ID:
+      <input type="number" id="outletId" required />
+    </label>
+
+    <label>
+      Menu ID:
+      <input type="number" id="menuId" required />
+    </label>
+
+    <label>
+      Start Date:
+      <input type="date" id="startDate" required />
+    </label>
+
+    <label>
+      End Date:
+      <input type="date" id="endDate" required />
+    </label>
+
+    <label>
+      Start Table Number:
+      <input type="number" id="startTable" required />
+    </label>
+
+    <label>
+      End Table Number:
+      <input type="number" id="endTable" required />
+    </label>
+
+    <button onclick="generateAndDownloadZip()">
+      Generate and Download Zip
+    </button>
+
+    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+    <script>
+      async function generateAndDownloadZip() {
+        const environment = document.querySelector(
+          'input[name="environment"]:checked'
+        ).value;
+        const baseUrl =
+          environment === "prod"
+            ? "https://biteatwork.sodexonet.com"
+            : "https://biteatwork-uat.sodexonet.com";
+
+        const locationId = document.getElementById("locationId").value;
+        const outletId = document.getElementById("outletId").value;
+        const menuId = document.getElementById("menuId").value;
+        const startDate = document.getElementById("startDate").value;
+        const endDate = document.getElementById("endDate").value;
+        const startTable = document.getElementById("startTable").value;
+        const endTable = document.getElementById("endTable").value;
+
+        const startDateObj = new Date(startDate);
+        const endDateObj = new Date(endDate);
+
+        const zipData = [];
+
+        while (startDateObj <= endDateObj) {
+          const folderDate = startDateObj.toISOString().split("T")[0];
+
+          for (let i = startTable; i <= endTable; i++) {
+            const tableUrl = `${baseUrl}/order/menus/${locationId}/${outletId}?menuId=${menuId}&date=${folderDate}&table=${i}`;
+            const qr = new QRCode(document.createElement("div"), tableUrl);
+            const qrImage = qr._el.firstChild.toDataURL("image/png");
+
+            // Add file information to the array
+            zipData.push({
+              folderPath: folderDate,
+              fileName: `table${i}.png`,
+              content: qrImage.split(";base64,").pop(),
+            });
+          }
+
+          startDateObj.setDate(startDateObj.getDate() + 1);
+        }
+
+        // Send a POST request to the server
+        const response = await fetch(
+          "http://localhost:3000/generateAndDownloadZip",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(zipData),
+          }
+        );
+
+        if (response.ok) {
+          // The server successfully created the zip file
+          window.location.href = "http://localhost:3000/QR_Codes.zip";
+        } else {
+          console.error("Failed to generate and download the zip file.");
+        }
+      }
+    </script>
+  </body>
+</html>
