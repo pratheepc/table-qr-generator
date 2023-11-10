@@ -125,7 +125,7 @@
 
         // Send a POST request to the server
         const response = await fetch(
-          "http://localhost:3000/generateAndDownloadZip",
+          "https://bite-table-qr.netlify.app/generateAndDownloadZip",
           {
             method: "POST",
             headers: {
@@ -137,7 +137,8 @@
 
         if (response.ok) {
           // The server successfully created the zip file
-          window.location.href = "http://localhost:3000/QR_Codes.zip";
+          window.location.href =
+            "https://bite-table-qr.netlify.app/QR_Codes.zip";
         } else {
           console.error("Failed to generate and download the zip file.");
         }
